@@ -3,3 +3,6 @@ def test_call():
 
 def new_test_call():
     print ("On developer branch.")
+
+def branch_changer():
+    print ("yo")
