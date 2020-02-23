@@ -2,10 +2,11 @@ from bokeh.models import Slider, CustomJS
 from bokeh.layouts import row, column
 from bokeh.plotting import Figure, ColumnDataSource
 from bokeh.models.widgets import Button, TextInput
-
-
+from flask import Response
+import pandas as pd
 from scipy.optimize import root
 import numpy as np
+from os.path import dirname, join
 
 def iv_data(V_oc=35, I_sc = 6, R_s=0.1, R_sh=20000, N=100):
     """This function will spit out I-V data points.
@@ -43,7 +44,7 @@ def plot_iv():
     rs_slider = Slider(start = 0.01, end = 5, value = 0.34, step = 0.5, title = 'R_s')
     rsh_slider = Slider(start = 10, end = 1000, value = 100, step = 10, title = 'R_sh')
     n_slider = Slider(start = 25, end = 5000, value = 100, step = 5, title = 'Data Points')
-    download_button = Button(label = 'Download data as csv', width = 100)
+    download_button = Button(label = 'Download data as csv', width = 100, button_type="success")
     
     def get_slider_val():
         return (voc_slider.value ,isc_slider.value, rs_slider.value, rsh_slider.value, n_slider.value)
@@ -53,14 +54,21 @@ def plot_iv():
         source.data = iv_data(V, I, Rs, Rsh, N)
     
     def download():
-        print("Not working for now")
+        df = pd.DataFrame(source.data)
+        df.columns = ['V', 'I']
+        csv = df.to_csv()
+        print('Downloading')
+        print(df.head())
+        return Response(csv, mimetype="text/csv", headers={"Content-disposition": "attachment; filename=fi.csv"})
+
 
     isc_slider.on_change('value', update_plot)
     voc_slider.on_change('value', update_plot)
     rs_slider.on_change('value', update_plot)
     rsh_slider.on_change('value', update_plot)
     n_slider.on_change('value', update_plot)
-    download_button.on_click(download)
+    #download_button.on_click(download)
+    download_button.js_on_click(CustomJS(args=dict(source=source),code=open(join(dirname(__file__), "download.js")).read()))
     
     layout = row(plot, column(isc_slider, voc_slider, rs_slider, rsh_slider, n_slider, download_button),)
     return (layout)
